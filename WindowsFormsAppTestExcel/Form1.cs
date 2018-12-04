@@ -42,6 +42,7 @@ namespace WindowsFormsAppTestExcel
 
                 Excel.Worksheet xlSht = xlWb2.Sheets["Лист1"]; //имя листа в файле
                 xlApp.Visible = true;
+                //xlApp.DisplayAlerts = false;
                 xlApp.Run(@"ParserAddinTest");
                 string activeParserName = textBoxActiveParserName.Text;
                 var res = xlApp.Run(@"StartParser", activeParserName);
@@ -52,7 +53,12 @@ namespace WindowsFormsAppTestExcel
 
                 int iLastRow = xlSht.Cells[xlSht.Rows.Count, "B"].End[Excel.XlDirection.xlUp].Row;  //последняя заполненная строка в столбце А
                 var arrData = (object[,])xlSht.Range["A1:B" + iLastRow].Value; //берём данные со 2-й строки, если нужно с 1-й, то замените A2 на A1
+
+                NAR(xlSht);
+                xlWb1.Close(false);
+                NAR(xlWb1);
                 xlWb2.Close(false); //закрываем файл и сохраняем изменения, если не сохранять, то false                
+                NAR(xlWb2);
 
                 StringBuilder sb = new StringBuilder();
 
@@ -70,7 +76,10 @@ namespace WindowsFormsAppTestExcel
             }
             finally
             {
+                
                 xlApp.Quit(); //закрываем Excel
+                NAR(xlApp);
+                GC.Collect();
                 this.Cursor = savedCursor;
             }
 
@@ -116,9 +125,12 @@ namespace WindowsFormsAppTestExcel
                 Excel.Workbook xlWb1 = xlApp.Workbooks.Open(fileNameParser);
 
                 xlApp.Run(@"ParserAddinTest");
+                xlWb1.Close(false);
+                NAR(xlWb1);
                 xlApp.Quit(); //закрываем Excel
-                xlApp = null;
-                textBoxResult.Text = "Parser test ok.";
+                NAR(xlApp);
+                GC.Collect();
+                textBoxResult.Text = "Parser test ok. xlApp = null";
             }
             catch (Exception exc)
             {
@@ -135,6 +147,19 @@ namespace WindowsFormsAppTestExcel
             if (openExcelFileDialog.ShowDialog() == DialogResult.OK)
             {
                 textBoxExcelSheetPath.Text = openExcelFileDialog.FileName;
+            }
+        }
+
+        private static void NAR(object o)
+        {
+            try
+            {
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(o);
+            }
+            catch { }
+            finally
+            {
+                o = null;
             }
         }
     }
